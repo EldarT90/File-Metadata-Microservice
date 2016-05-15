@@ -24,6 +24,7 @@
   "author": "Blake Johnston",
   "license": "MIT",
   "dependencies": {
+    "ipware": "^0.0.8"
     "bing.search": "^1.0.1",
     "dotenv": "^1.2.0",
     "express": "^4.12.4",
