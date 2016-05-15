@@ -1,81 +1,74 @@
 'use strict';
 var express = require('express');
 var app = express();
-var http = require("http");
-var shortURLPromise, short = require('short');
-var regex = /^https?:\/\/(www)?\.[a-z]+\.[a-z]{1,3}.*$/
-
-short.connect('mongodb://eldart:abeceda@ds011369.mlab.com:11369/url-shortener');   
-short.connection.on('error', function(error) {
-    console.log({ error: "Unexpected error" });;
-});
-
+var Search = require('bing.search');
+var search = new Search('sJou43iB2LvfrEg0RzqyfE2GwG8dgUwDxTtxQxDauao');
+var util = require('util');
 app.use(express.static('public'));
-
-
-
-app.get("/:id", function(req, res) {
-  var id = req.params.id; 
-  console.log(id);
-  var hitPromise = short.retrieve(id);
-  hitPromise.then(function(doc) {
-    console.log("TARGETING " + doc);
-
-    res.statusCode = 302;
-    res.setHeader("Location", doc.URL);
-    res.end();
-    
-  
-  }, function(error) {
-    if (error) {
-       res.send({ error: "No url with key " + id + " found." });
-    }
-  });
-  
-
+var MongoClient = require("mongodb").MongoClient,
+    assert = require("assert");
+var mongoose = require('mongoose');
+var ip = require("ipware")().get_ip;
+var url = "mongodb://eldart:abeceda@ds023432.mlab.com:23432/image-search";
+MongoClient.connect(url, function(err, db) {
+    assert.equal(null, err);
+    console.log("Connected correctly to server");
+    db.close();
 });
-
-
-
-
-app.get('/new/*', function(req, res) {
-  var a = req.path.split('/').slice(2).join('/') 
-    var url = req.params.url;
-console.log(a);
-
- if (!a.match(regex)) {
-   res.send({ error: "URL request is not valid" });
-   return;
- }  
-  
-    var shortURLPromise = short.generate({
-        URL: a
-    });
-    // gets back the short url document, and then retrieves it 
-    shortURLPromise.then(function(mongodbDoc) {
-        console.log('>> CREATED NEW SHORT URL:');
-        console.log(mongodbDoc);
-        console.log('>> retrieving short URL: %s', mongodbDoc.hash);
-        short.retrieve(mongodbDoc.hash).then(function(result) {
-            console.log('>> retrieve result:');
-            console.log(result)
-            res.send({
-                "website": mongodbDoc.URL,
-                "short version": mongodbDoc.hash
-            });
-            //res.send(mongodbDoc.URL);
-            //var shortLink = mongodbDoc.URL;
-        }, function(error) {
-            if (error) {
-               res.send({ error: "Unexpected error" });
-            }
+mongoose.connect(
+    'mongodb://eldart:abeceda@ds023432.mlab.com:23432/image-search');
+var Schema = mongoose.Schema,
+    ObjectId = Schema.ObjectId;
+var historySchema = mongoose.Schema({
+    name: String,
+    date: Date,
+    ipadress: String
+});
+var History = mongoose.model("History", historySchema);
+app.get("/search/:id", function(req, res) {
+    var ipInfo = ip(req);
+    var IP = ipInfo['clientIp'];
+    var id = req.params.id;
+    var off = req.query.offset || 1;
+    search.images(id, {
+        skip: off,
+        top: 10
+    }, function(err, results) {
+        console.log(util.inspect(results, {
+            colors: true,
+            depth: null
+        }));
+        var datum = new Date()
+        var day = datum.getDate()
+        var month = datum.getMonth() + 1
+        var year = datum.getFullYear()
+        var searchResult = new History({
+            name: id,
+            date: datum,
+            ipadress: IP
         });
-    }, function(error) {
-        if (error) {
-             res.send({ error: "Unexpected error" });
-        }
+        searchResult.save(function(err, searchResult) {
+            if (err) return console.error(err);
+            console.log(searchResult);
+        });
+        res.send(results);
     });
 });
+app.get("/history", function(req, res) {
+     
+    var ipInfo = ip(req);
+    var IP = ipInfo['clientIp'];
+    History.find({ ipadress: IP },
+      {
+        _id: 0,
+        __v: 0
+      }, function(err, data) {
+        if (err) return console.error(err);
+        res.send(data);
+    });
+
+});
+
 app.listen(process.env.PORT || 3000, function() {
     console.log('Listening on port ' + process.env.PORT + '...');
 });
