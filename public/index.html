@@ -3,18 +3,51 @@
 <html>
 
 	<head>
-		<title>Request Header Parser Microservice</title>
+		<title>File Metadata Microservice</title>
 		
 		<link href="/public/css/main.css" rel="stylesheet" type="text/css">
+		
+		
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+<script>
+		
+		
+		$(document).ready(function() {
+			$("form#uploadForm").submit(function() {
+	
+				var formData = new FormData($(this)[0]);
+			    
+			    $.ajax({
+			    	url: $(this).attr('action'),
+			    	type: 'POST',
+			    	data: formData,
+			    	processData: false,
+			    	contentType: false,
+			    	success: function(data) {
+			    		alert("File uploaded. File size: "+data);
+			    	}
+			    });
+			
+			    return false;
+			});
+			
+		});
+		</script>
 	</head>
 
 	<header>
-		<h1>Image Search Abstraction Layer</h1>
+	<h1>File Metadata Microservice</h1>
 		<p>Created by Eldar Tinjic</p>
-		<p>Search image example: https://eldart-image-search.herokuapp.com/search/africa</p>
-		<p>Search image with offset example: https://eldart-image-search.herokuapp.com/search/africa?offset=50</p>
-		<p>Search history: https://eldart-image-search.herokuapp.com/history</p> 
-		
+	<form id        =  "uploadForm"
+     enctype   =  "multipart/form-data"
+     action    =  "/"
+     method    =  "post"
+>
+<input type="file" name="File" />
+<input type="submit" value="Upload File" name="submit">
+</form>
+	
+
 	
 	</header> 
 	<body>
